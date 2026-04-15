@@ -1,16 +1,34 @@
 import { icons } from "@phosphor-icons/core";
 import type { IconEntry } from "@phosphor-icons/core";
-import phosphorPkg from "@phosphor-icons/core/package.json";
 import { SCHEMA_VERSION } from "../schema/icon-thesaurus";
 import type { IconSemanticEntry } from "../schema/icon-thesaurus";
 import type { SemanticSourceAdapter } from "./types";
+
+// @phosphor-icons/core does not expose package.json via its exports map,
+// so we resolve the package directory via require.resolve and read the file directly.
+function resolvePhosphorVersion(): string {
+  try {
+    // resolve the main entry to get a path inside the package directory
+    const entryPath: string = require.resolve("@phosphor-icons/core");
+    // walk up until we find node_modules/@phosphor-icons/core
+    const parts = entryPath.split(/[\\/]/);
+    const pkgIdx = parts.lastIndexOf("@phosphor-icons");
+    if (pkgIdx === -1) return "unknown";
+    const pkgRoot = parts.slice(0, pkgIdx + 2).join("/");
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const pkg = require(`${pkgRoot}/package.json`);
+    return pkg.version as string;
+  } catch {
+    return "unknown";
+  }
+}
 
 export class PhosphorAdapter implements SemanticSourceAdapter {
   readonly sourceId = "phosphor";
   readonly sourceVersion: string;
 
   constructor() {
-    this.sourceVersion = phosphorPkg.version;
+    this.sourceVersion = resolvePhosphorVersion();
   }
 
   async fetchOrLoadRawData(): Promise<IconEntry[]> {
