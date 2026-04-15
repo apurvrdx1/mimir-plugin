@@ -1,10 +1,3 @@
-// Node ambient declarations — only used in the smoke-test block (require.main === module).
-// The main Figma plugin build excludes this block; declarations satisfy tsc under the
-// browser-targeted tsconfig which doesn't include @types/node.
-declare const require: { main: unknown; (id: string): unknown; resolve(id: string): string };
-declare const module: { exports: unknown };
-declare const process: { exit(code?: number): never };
-
 import type { CompiledIconThesaurus } from "../schema/compiled-dataset";
 import type { IconSemanticEntry } from "../schema/icon-thesaurus";
 import { normalizeName } from "./normalize";
@@ -167,60 +160,4 @@ export function matchIcon(name: string, index: ThesaurusIndex): MatchResult {
   }
 
   return noMatch;
-}
-
-// Smoke test — run with: npx ts-node --project tsconfig.scripts.json src/core/match.ts
-if (require.main === module) {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const thesaurusData = require("../data/compiled/icon-thesaurus.v1.json") as CompiledIconThesaurus;
-
-  const index = buildThesaurusIndex(thesaurusData);
-  console.log(
-    `Index built: ${index.entries.length} entries, ${index.lookup.size} lookup keys`
-  );
-  console.log(`Thesaurus version: ${index.thesaurusVersion}`);
-  console.log();
-
-  const tests: Array<{ input: string; expectation: string }> = [
-    { input: "trash", expectation: 'confidence "high"' },
-    { input: "Icon / Delete / Regular", expectation: "entry found" },
-    { input: "sap-icon://airplane", expectation: "entry found" },
-  ];
-
-  let allPassed = true;
-
-  for (const { input, expectation } of tests) {
-    const result = matchIcon(input, index);
-    const found = result.entry !== null;
-    const summary = found
-      ? `entry="${result.entry!.canonicalId}" confidence=${result.confidence} via=${result.matchedVia}`
-      : `NO MATCH confidence=${result.confidence}`;
-
-    console.log(`Input:       "${input}"`);
-    console.log(`Expectation: ${expectation}`);
-    console.log(`Result:      ${summary}`);
-    if (result.normalizationSteps.length > 0) {
-      console.log(`Steps:       [${result.normalizationSteps.join(", ")}]`);
-    }
-    if (result.score !== undefined) {
-      console.log(`Score:       ${result.score.toFixed(3)}`);
-    }
-    console.log();
-
-    if (expectation === 'confidence "high"' && result.confidence !== "high") {
-      console.error(`FAIL: expected confidence "high", got "${result.confidence}"`);
-      allPassed = false;
-    }
-    if (expectation === "entry found" && !found) {
-      console.warn(`WARN: expected entry found but got no match for "${input}" (dataset may not contain this canonical name)`);
-    }
-  }
-
-  if (allPassed) {
-    console.log("Smoke test complete.");
-    process.exit(0);
-  } else {
-    console.error("Smoke test FAILED.");
-    process.exit(1);
-  }
 }
