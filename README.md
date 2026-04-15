@@ -1,6 +1,6 @@
 # Mimir — Icon Tag Writer for Figma
 
-> Add semantic tags to icon components so they're easier to find in Figma libraries.
+> Add semantic tags to icon components so they're easier to find in Figma libraries, without tagging them manually.
 
 ## What it does
 

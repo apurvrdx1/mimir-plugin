@@ -6,17 +6,15 @@ Mimir
 
 ## Subtitle
 
-Add semantic tags to icon components so they're easier to find in Figma libraries.
+Add semantic tags to icon components so they're easier to find in Figma libraries, without tagging them manually.
 
 ## Short description (under 100 words)
 
-Mimir enriches icon component descriptions with semantic search tags so designers can find the right icon without knowing its exact name. Select icon components, scan, preview the proposed tags, and write — all in one compact utility panel. Works with any icon library in Figma.
+Mimir adds semantic tags to icon components so teams can find icons with natural search terms, not just exact component names, while saving time on manual tagging and cleanup.
 
 ## Long description
 
-Mimir helps design teams make icon libraries easier to search in Figma. Icon components are often named after the original SVG file or a narrow visual label, but people search in many different ways — by action, object, intent, region, language, or team convention. One person may look for "delete," another for "trash," "bin," "dustbin," or "remove."
-
-Mimir scans selected icon components, matches them to semantic metadata, and writes searchable tags into component descriptions so the right icon is easier to find, even when the search term doesn't exactly match the component name.
+Mimir helps design teams make icon libraries easier to search in Figma. Icon components are often named after the original SVG file or a narrow visual label, but people search in many different ways, including by action, object, intent, region, language, or team convention. One person may look for "delete," while another searches for "trash," "bin," "dustbin," or "remove." Mimir scans selected icon components, matches them to semantic metadata, and writes searchable tags into component descriptions so the right icon is easier to find, even when the search term does not exactly match the component name. Instead of tagging each icon by hand, teams can use Mimir to automate much of that repetitive cleanup work, save time, and keep libraries easier to discover and maintain.
 
 **How it works:**
 1. Select icon components or component sets in Figma
