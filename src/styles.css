@@ -1,0 +1,117 @@
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Figma CSS variable bridge ── */
+:root {
+  --bg: var(--figma-color-bg, #ffffff);
+  --bg-secondary: var(--figma-color-bg-secondary, #f5f5f5);
+  --bg-hover: var(--figma-color-bg-hover, #ebebeb);
+  --bg-pressed: var(--figma-color-bg-pressed, #e0e0e0);
+  --text: var(--figma-color-text, #1e1e1e);
+  --text-secondary: var(--figma-color-text-secondary, #666666);
+  --text-disabled: var(--figma-color-text-disabled, #b3b3b3);
+  --border: var(--figma-color-border, #e5e5e5);
+  --brand: var(--figma-color-bg-brand, #0d99ff);
+  --brand-text: var(--figma-color-text-onbrand, #ffffff);
+  --danger: #f24822;
+  --success: #14ae5c;
+  --warn: #ffcd29;
+
+  /* Confidence badge colors */
+  --conf-high: #14ae5c;
+  --conf-medium: #ffcd29;
+  --conf-low: #f24822;
+  --conf-none: #b3b3b3;
+
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ── Layout ── */
+body { width: 320px; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+#app { display: flex; flex-direction: column; flex: 1; }
+
+/* ── Typography ── */
+.mono { font-family: "SF Mono", "Fira Mono", "Roboto Mono", monospace; font-size: 10px; }
+.text-secondary { color: var(--text-secondary); }
+.text-disabled { color: var(--text-disabled); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Header ── */
+.header { padding: 10px 12px 8px; border-bottom: 1px solid var(--border); }
+.header__title { font-size: 12px; font-weight: 600; }
+.header__subtitle { font-size: 10px; color: var(--text-secondary); margin-top: 1px; }
+
+/* ── Summary bar ── */
+.summary { display: flex; gap: 12px; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--bg-secondary); flex-wrap: wrap; }
+.summary__item { display: flex; align-items: center; gap: 4px; }
+.summary__count { font-weight: 600; font-size: 11px; }
+.summary__label { color: var(--text-secondary); font-size: 10px; }
+
+/* ── Controls ── */
+.controls { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.controls__row { display: flex; align-items: center; gap: 6px; }
+.controls__mode { display: flex; gap: 4px; align-items: center; }
+.controls__mode-label { color: var(--text-secondary); font-size: 10px; }
+
+/* ── Buttons ── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 11px; font-weight: 500; cursor: pointer; transition: background 120ms; white-space: nowrap; }
+.btn:hover { background: var(--bg-hover); }
+.btn:active { background: var(--bg-pressed); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn--primary { background: var(--brand); border-color: var(--brand); color: var(--brand-text); }
+.btn--primary:hover { filter: brightness(1.1); }
+.btn--small { height: 22px; padding: 0 7px; font-size: 10px; }
+.btn--ghost { border-color: transparent; background: transparent; }
+.btn--ghost:hover { background: var(--bg-hover); }
+
+/* ── Radio-style mode toggle ── */
+.mode-btn { height: 22px; padding: 0 8px; font-size: 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary); cursor: pointer; transition: all 100ms; }
+.mode-btn:hover { background: var(--bg-hover); }
+.mode-btn.active { background: var(--brand); border-color: var(--brand); color: var(--brand-text); font-weight: 600; }
+
+/* ── Checkbox ── */
+.checkbox-label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 10px; color: var(--text-secondary); user-select: none; }
+.checkbox-label input[type="checkbox"] { width: 12px; height: 12px; accent-color: var(--brand); cursor: pointer; }
+
+/* ── Confidence badge ── */
+.badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.badge--high { background: color-mix(in srgb, var(--conf-high) 15%, transparent); color: var(--conf-high); }
+.badge--medium { background: color-mix(in srgb, var(--conf-medium) 20%, transparent); color: #9a6e00; }
+.badge--low { background: color-mix(in srgb, var(--conf-low) 15%, transparent); color: var(--conf-low); }
+.badge--none { background: var(--bg-secondary); color: var(--conf-none); }
+
+/* ── Empty state ── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 32px 20px; text-align: center; flex: 1; }
+.empty__icon { font-size: 24px; opacity: 0.3; }
+.empty__title { font-size: 11px; font-weight: 600; color: var(--text); }
+.empty__body { font-size: 10px; color: var(--text-secondary); }
+
+/* ── Result list ── */
+.result-list { flex: 1; overflow-y: auto; }
+.result-row { border-bottom: 1px solid var(--border); }
+.result-row--dimmed { opacity: 0.5; }
+.result-row__header { display: flex; align-items: center; gap: 6px; padding: 7px 12px; cursor: pointer; user-select: none; }
+.result-row__header:hover { background: var(--bg-hover); }
+.result-row__chevron { font-size: 8px; color: var(--text-secondary); transition: transform 150ms; flex-shrink: 0; }
+.result-row__chevron--open { transform: rotate(90deg); }
+.result-row__name { flex: 1; font-weight: 500; font-size: 11px; min-width: 0; }
+.result-row__tags-preview { font-size: 10px; color: var(--text-secondary); min-width: 0; max-width: 100px; }
+.result-row__body { padding: 0 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.result-row__field { display: flex; flex-direction: column; gap: 2px; }
+.result-row__field-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 600; }
+.result-row__field-value { font-size: 10px; color: var(--text); }
+.result-row__desc-preview { font-family: "SF Mono","Fira Mono","Roboto Mono",monospace; font-size: 9px; color: var(--text-secondary); background: var(--bg-secondary); padding: 4px 6px; border-radius: 3px; white-space: pre-wrap; word-break: break-word; max-height: 60px; overflow: hidden; }
+.result-row__tags-input { width: 100%; font-size: 10px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); outline: none; font-family: inherit; }
+.result-row__tags-input:focus { border-color: var(--brand); }
+.result-row__include { display: flex; align-items: center; gap: 5px; font-size: 10px; cursor: pointer; user-select: none; }
+
+/* ── Footer ── */
+.footer { padding: 8px 12px; border-top: 1px solid var(--border); display: flex; gap: 6px; background: var(--bg); }
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin 0.6s linear infinite; }
