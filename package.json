@@ -1,6 +1,7 @@
 {
   "name": "mimir",
   "version": "1.0.0",
+  "private": true,
   "description": "Add semantic tags to icon components so they're easier to find in Figma libraries.",
   "scripts": {
     "build": "node esbuild.config.js",

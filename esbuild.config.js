@@ -17,11 +17,14 @@ if (!fs.existsSync("dist")) fs.mkdirSync("dist");
 function inlineUiJs() {
   const htmlSrc = fs.readFileSync("src/ui.html", "utf8");
   const uiJs = fs.readFileSync("dist/ui.js", "utf8");
-  // Inline the JS into the HTML so Figma serves a single file
   const htmlOut = htmlSrc.replace(
-    '<script src="ui.js"></script>',
+    /<script\s+src=["']ui\.js["']\s*><\/script>/,
     `<script>${uiJs}</script>`
   );
+  if (htmlOut === htmlSrc) {
+    throw new Error('inlineUiJs: could not find <script src="ui.js"> placeholder in src/ui.html');
+  }
+  fs.unlinkSync("dist/ui.js");
   fs.writeFileSync("dist/ui.html", htmlOut);
   console.log("Built dist/ui.html");
 }

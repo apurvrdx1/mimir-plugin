@@ -5,6 +5,7 @@
     "lib": ["ES2017", "DOM"],
     "strict": true,
     "noImplicitAny": true,
+    "skipLibCheck": true,
     "moduleResolution": "node",
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
@@ -12,7 +13,8 @@
     "resolveJsonModule": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "typeRoots": ["./node_modules/@types", "./node_modules/@figma/plugin-typings"]
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
+    "types": ["plugin-typings"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "scripts", "dist"]
