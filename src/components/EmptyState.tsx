@@ -8,7 +8,7 @@ interface EmptyStateProps {
 
 const CONTENT: Record<EmptyStateVariant, { icon: string; title: string; body: string }> = {
   "no-selection": {
-    icon: "◻",
+    icon: "🤷🏽‍♂️",
     title: "No selection",
     body: "Select icon components or component sets in Figma, then click Scan Selection.",
   },
