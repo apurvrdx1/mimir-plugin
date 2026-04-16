@@ -20,9 +20,11 @@ function inlineUiJs() {
   const uiCssPath = "dist/ui.css";
   const uiCss = fs.existsSync(uiCssPath) ? fs.readFileSync(uiCssPath, "utf8") : "";
 
+  // Use a function as the replacement so $ characters in uiJs/uiCss are never
+  // interpreted as special replacement patterns (e.g. $& $1 $$).
   let htmlOut = htmlSrc.replace(
     /<script\s+src=["']ui\.js["']\s*><\/script>/,
-    `${uiCss ? `<style>${uiCss}</style>` : ""}<script>${uiJs}</script>`
+    () => (uiCss ? `<style>${uiCss}</style>` : "") + `<script>${uiJs}</script>`
   );
   if (htmlOut === htmlSrc) {
     throw new Error('inlineUiJs: could not find <script src="ui.js"> placeholder in src/ui.html');
