@@ -46,8 +46,11 @@ export function ResultRow({ data, writeMode, pluginVersion, onIncludedChange }: 
     onIncludedChange(data.nodeId, (e.target as HTMLInputElement).checked);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const finalDescPreview = hasMatch ? formatMimirBlock(tags, pluginVersion, today) : null;
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const h = now.getHours();
+  const time12h = `${h % 12 || 12}:${now.getMinutes().toString().padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
+  const finalDescPreview = hasMatch ? formatMimirBlock(tags, pluginVersion, today, time12h) : null;
 
   const descLabel =
     writeMode === "append" ? "Description to be appended" : "New merged description";

@@ -1,29 +1,37 @@
 export const MIMIR_SEPARATOR = "______________";
 
-/** Matches the start of a Mimir-managed block at the end of a description. */
-const MIMIR_BLOCK_PATTERN = /\n?_{14}\nsearch tags:/;
-
 export type WriteMode = "merge" | "append";
 
 export interface ParsedDescription {
   /** Text BEFORE the mimir block (trimmed). */
   userContent: string;
-  /** The existing mimir block text (from separator onward, trimmed), or null if absent. */
+  /** The existing mimir block text (trimmed), or null if absent. */
   mimirBlock: string | null;
 }
 
 /**
  * Split an existing description into user-authored content and the Mimir-managed block.
- * Detects the new underscores-separator format.
+ * Detects both the current format (tags-first, separator at end) and the legacy format
+ * (separator-first) so old blocks are replaced cleanly on the next merge write.
  */
 export function parseExistingDescription(text: string): ParsedDescription {
-  const match = MIMIR_BLOCK_PATTERN.exec(text);
-  if (!match) {
-    return { userContent: text.trim(), mimirBlock: null };
+  // Current format: "search tags:…\n(mimir …)\n______________"
+  const newMatch = /\n?search tags:[\s\S]*\n_{14}\s*$/.exec(text);
+  if (newMatch) {
+    return {
+      userContent: text.slice(0, newMatch.index).trim(),
+      mimirBlock: text.slice(newMatch.index).trim(),
+    };
   }
-  const userContent = text.slice(0, match.index).trim();
-  const mimirBlock = text.slice(match.index).trim();
-  return { userContent, mimirBlock };
+  // Legacy format: "______________\nsearch tags:…"
+  const legacyMatch = /\n?_{14}\nsearch tags:/.exec(text);
+  if (legacyMatch) {
+    return {
+      userContent: text.slice(0, legacyMatch.index).trim(),
+      mimirBlock: text.slice(legacyMatch.index).trim(),
+    };
+  }
+  return { userContent: text.trim(), mimirBlock: null };
 }
 
 /**
@@ -31,19 +39,20 @@ export function parseExistingDescription(text: string): ParsedDescription {
  *
  * Example output:
  * ```
- * ______________
  * search tags: delete, trash, trash can, dustbin, remove, discard, bin
- * mimir 1.0.0 · added: 2026-04-16
+ * (mimir 1.0.0 · added: 2026-04-16 10:01 am)
+ * ______________
  * ```
  */
 export function formatMimirBlock(
   tags: string[],
   pluginVersion: string,
-  date: string
+  date: string,
+  time = ""
 ): string {
   const tagLine = `search tags: ${tags.join(", ")}`;
-  const metaLine = `mimir ${pluginVersion} · added: ${date}`;
-  return [MIMIR_SEPARATOR, tagLine, metaLine].join("\n");
+  const metaLine = `(mimir ${pluginVersion} · added: ${date}${time ? ` ${time}` : ""})`;
+  return [tagLine, metaLine, MIMIR_SEPARATOR].join("\n");
 }
 
 /**

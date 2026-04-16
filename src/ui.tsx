@@ -194,7 +194,9 @@ function writeDescriptions() {
 
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);
-  const timeStr = now.toTimeString().slice(0, 5);
+  const timeStr = now.toTimeString().slice(0, 5); // 24h for changelog
+  const h = now.getHours();
+  const time12h = `${h % 12 || 12}:${now.getMinutes().toString().padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
   const source = thesaurus.sources[0]?.sourceId ?? "phosphor";
 
   // Split: rows where tags changed vs rows already up to date
@@ -230,7 +232,7 @@ function writeDescriptions() {
   const items: WriteItem[] = changed.map((row) => {
     const mimirBlock =
       row.matchResult.entry !== null
-        ? formatMimirBlock(row.tags, PLUGIN_VERSION, dateStr)
+        ? formatMimirBlock(row.tags, PLUGIN_VERSION, dateStr, time12h)
         : "";
     const finalDescription = composeDescription(
       row.existingDescription,
