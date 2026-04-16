@@ -70,6 +70,16 @@ async function handleWriteDescriptions(
     }
   }
 
+  // Notify on write failures before sending result to UI
+  const errorCount = results.filter((r) => !r.success).length;
+  if (errorCount > 0) {
+    if (errorCount === results.length) {
+      figma.notify("Write failed — check that you have edit access to this file", { error: true });
+    } else {
+      figma.notify(`${errorCount} of ${results.length} writes failed — check edit access`, { error: true });
+    }
+  }
+
   const response: PluginToUiMessage = { type: "WRITE_RESULT", results };
   figma.ui.postMessage(response);
 }
@@ -79,6 +89,11 @@ async function handleCreateChangelog(
   unchangedEntries: ChangelogEntry[],
   meta: ChangelogMeta
 ): Promise<void> {
+  // Nothing to record (all writes failed upstream)
+  if (entries.length === 0 && unchangedEntries.length === 0) return;
+
+  const originalPage = figma.currentPage;
+
   try {
     await figma.loadFontAsync({ family: "Inter", style: "Regular" });
     await figma.loadFontAsync({ family: "Inter", style: "Medium" });
@@ -91,8 +106,10 @@ async function handleCreateChangelog(
       page = figma.createPage();
       page.name = "mimir changelog";
     }
-    // Must load the page before accessing its children
     await page.loadAsync();
+
+    // Navigate to changelog page so createFrame()/createText() attach there
+    await figma.setCurrentPageAsync(page);
 
     // Layout constants
     const FRAME_WIDTH = 420;
@@ -109,10 +126,9 @@ async function handleCreateChangelog(
       if (right > xPos) xPos = right;
     }
 
-    // Create the write frame (vertical auto-layout, fixed 420px wide)
+    // Main write frame (vertical auto-layout, fixed 420px wide)
     const frameLabel = `mimir write · ${meta.date} ${meta.time}`;
     const writeFrame = figma.createFrame();
-    page.appendChild(writeFrame);
     writeFrame.name = frameLabel;
     writeFrame.resize(FRAME_WIDTH, 100);
     writeFrame.x = xPos;
@@ -204,7 +220,6 @@ async function handleCreateChangelog(
 
     // "No changes" section — items whose tags were already up to date
     if (unchangedEntries.length > 0) {
-      // Section separator
       const noChangeSep = figma.createFrame();
       writeFrame.appendChild(noChangeSep);
       noChangeSep.name = "no-changes-sep";
@@ -213,7 +228,6 @@ async function handleCreateChangelog(
       noChangeSep.layoutSizingVertical = "FIXED";
       noChangeSep.fills = [{ type: "SOLID", color: { r: 0.88, g: 0.88, b: 0.88 } }];
 
-      // Section header
       const noChangeHeader = figma.createText();
       writeFrame.appendChild(noChangeHeader);
       noChangeHeader.fontName = { family: "Inter", style: "Regular" };
@@ -222,7 +236,6 @@ async function handleCreateChangelog(
       noChangeHeader.layoutSizingHorizontal = "FILL";
       noChangeHeader.fills = [{ type: "SOLID", color: { r: 0.6, g: 0.6, b: 0.6 } }];
 
-      // One row per unchanged item (name only, dimmed)
       for (const entry of unchangedEntries) {
         const nameNode = figma.createText();
         writeFrame.appendChild(nameNode);
@@ -235,9 +248,34 @@ async function handleCreateChangelog(
       }
     }
 
-    // Navigate to the changelog page
-    await figma.setCurrentPageAsync(page);
+    // Return to the user's original page immediately
+    await figma.setCurrentPageAsync(originalPage);
+
+    // Success notification — persists until dismissed so user can click the button
+    const capturedPage = page;
+    if (entries.length > 0) {
+      const taggedPart = `✓ ${entries.length} icon${entries.length !== 1 ? "s" : ""} tagged`;
+      const unchangedPart = unchangedEntries.length > 0
+        ? ` · ${unchangedEntries.length} unchanged`
+        : "";
+      figma.notify(taggedPart + unchangedPart, {
+        timeout: Infinity,
+        button: {
+          text: "View changelog",
+          action: () => {
+            figma.setCurrentPageAsync(capturedPage).catch(() => {});
+          },
+        },
+      });
+    } else {
+      // All unchanged — brief informational toast, no button needed
+      figma.notify(
+        `All ${unchangedEntries.length} icon${unchangedEntries.length !== 1 ? "s" : ""} already up to date`
+      );
+    }
   } catch (err) {
+    // Best-effort return to original page before surfacing the error
+    try { await figma.setCurrentPageAsync(originalPage); } catch (_) {}
     const message = err instanceof Error ? err.message : String(err);
     figma.notify(`Could not create changelog: ${message}`, { error: true });
   }
