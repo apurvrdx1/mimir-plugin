@@ -9,6 +9,20 @@ import type {
 
 figma.showUI(__html__, { width: 320, height: 560, title: "Mimir" });
 
+/**
+ * Figma names variant components as "PropertyName=Value" (or "Prop1=Val1, Prop2=Val2"
+ * for multi-property sets). Extract just the value of the first property so we get
+ * the semantic icon name regardless of what the user called the property.
+ * e.g. "Property 1=Trash" → "Trash", "Icon=Calendar" → "Calendar"
+ * Returns the original string unchanged if no "=" is found.
+ */
+function extractVariantName(name: string): string {
+  const eqIdx = name.indexOf("=");
+  if (eqIdx === -1) return name;
+  const value = name.slice(eqIdx + 1).split(",")[0].trim();
+  return value.length > 0 ? value : name;
+}
+
 figma.ui.onmessage = async (msg: UiToPluginMessage) => {
   if (msg.type === "SCAN_SELECTION") {
     await handleScanSelection();
@@ -49,7 +63,7 @@ async function handleScanSelection(): Promise<void> {
       } else {
         // Pattern B: different icons packed as variants — expand each child individually
         for (const child of children) {
-          push({ id: child.id, name: child.name, nodeType: "COMPONENT", existingDescription: child.description ?? "" });
+          push({ id: child.id, name: extractVariantName(child.name), nodeType: "COMPONENT", existingDescription: child.description ?? "" });
         }
       }
     } else if (node.type === "COMPONENT") {
@@ -64,7 +78,7 @@ async function handleScanSelection(): Promise<void> {
           push({ id: parent.id, name: parent.name, nodeType: "COMPONENT_SET", existingDescription: parent.description ?? "" });
         } else {
           // Pattern B: each variant is a different icon — use the individual child
-          push({ id: node.id, name: node.name, nodeType: "COMPONENT", existingDescription: node.description ?? "" });
+          push({ id: node.id, name: extractVariantName(node.name), nodeType: "COMPONENT", existingDescription: node.description ?? "" });
         }
       } else {
         // Standalone component
