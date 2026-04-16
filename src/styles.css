@@ -8,7 +8,7 @@
   --bg-hover: var(--figma-color-bg-hover, #ebebeb);
   --bg-pressed: var(--figma-color-bg-pressed, #e0e0e0);
   --text: var(--figma-color-text, #1e1e1e);
-  --text-secondary: var(--figma-color-text-secondary, #666666);
+  --text-secondary: var(--figma-color-text-secondary, #595959);
   --text-disabled: var(--figma-color-text-disabled, #b3b3b3);
   --border: var(--figma-color-border, #e5e5e5);
   --brand: var(--figma-color-bg-brand, #0d99ff);
@@ -18,9 +18,9 @@
 
   /* Confidence badge colors */
   --conf-high: #14ae5c;
-  --conf-medium: #e6a700;
+  --conf-medium: #b37f00;
   --conf-low: #f24822;
-  --conf-none: #b3b3b3;
+  --conf-none: #767676;
 
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 11px;
@@ -68,6 +68,22 @@ body { width: 320px; height: 560px; overflow: hidden; display: flex; flex-direct
 .btn--ghost { border-color: transparent; background: transparent; color: var(--text-secondary); }
 .btn--ghost:hover { background: var(--bg-hover); color: var(--text); border-color: transparent; }
 
+/* ── Focus rings (keyboard nav) ── */
+.btn:focus-visible,
+.mode-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.btn:disabled:focus-visible { outline: none; }
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.result-row__header:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
 /* ── Mode toggle button group ── */
 .controls__mode { display: flex; }
 .mode-btn {
@@ -86,12 +102,38 @@ body { width: 320px; height: 560px; overflow: hidden; display: flex; flex-direct
 /* ── Checkbox ── */
 .checkbox-label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 10px; color: var(--text-secondary); user-select: none; }
 .checkbox-label:hover { color: var(--text); }
-.checkbox-label input[type="checkbox"] { width: 12px; height: 12px; accent-color: var(--brand); cursor: pointer; }
+.checkbox-label input[type="checkbox"] { width: 12px; height: 12px; cursor: pointer; }
+
+/* Custom checkbox rendering — white tick on brand background */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 100ms, border-color 100ms;
+  vertical-align: middle;
+}
+input[type="checkbox"]:hover { border-color: var(--brand); }
+input[type="checkbox"]:checked { background: var(--brand); border-color: var(--brand); }
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 48%;
+  width: 7px; height: 4px;
+  border-left: 1.5px solid #ffffff;
+  border-bottom: 1.5px solid #ffffff;
+  transform: translate(-50%, -60%) rotate(-45deg);
+}
 
 /* ── Confidence badge ── */
 .badge { display: inline-flex; align-items: center; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0; }
 .badge--high { background: color-mix(in srgb, var(--conf-high) 12%, transparent); color: var(--conf-high); }
-.badge--medium { background: color-mix(in srgb, var(--conf-medium) 15%, transparent); color: var(--conf-medium); }
+.badge--medium { background: color-mix(in srgb, var(--conf-medium) 12%, transparent); color: var(--conf-medium); }
 .badge--low { background: color-mix(in srgb, var(--conf-low) 12%, transparent); color: var(--conf-low); }
 .badge--none { background: var(--bg-secondary); color: var(--conf-none); }
 
@@ -117,7 +159,7 @@ body { width: 320px; height: 560px; overflow: hidden; display: flex; flex-direct
 .result-row__header:hover { background: var(--bg-hover); }
 
 /* Checkbox — first */
-.result-row__checkbox { flex-shrink: 0; width: 12px; height: 12px; accent-color: var(--brand); cursor: pointer; margin-top: 2px; }
+.result-row__checkbox { flex-shrink: 0; cursor: pointer; margin-top: 2px; }
 
 /* Name + tag block — fills remaining space */
 .result-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -159,3 +201,4 @@ body { width: 320px; height: 560px; overflow: hidden; display: flex; flex-direct
 /* ── Spinner ── */
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinner { width: 11px; height: 11px; border: 2px solid rgba(255,255,255,0.3); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; opacity: 0.7; } }

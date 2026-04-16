@@ -55,13 +55,21 @@ export function ResultRow({ data, writeMode, pluginVersion, onIncludedChange }: 
   return (
     <div class={`result-row${isDimmed ? " result-row--dimmed" : ""}${expanded ? " result-row--expanded" : ""}`}>
       {/* Header — always visible */}
-      <div class="result-row__header" onClick={handleToggle}>
+      <div
+        class="result-row__header"
+        onClick={handleToggle}
+        role={!isUnsupported && hasMatch ? "button" : undefined}
+        tabIndex={!isUnsupported && hasMatch ? 0 : undefined}
+        onKeyDown={!isUnsupported && hasMatch ? (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleToggle(); } } : undefined}
+        aria-expanded={!isUnsupported && hasMatch ? expanded : undefined}
+      >
         {/* Checkbox first */}
         {!isUnsupported && (
           <input
             type="checkbox"
             class="result-row__checkbox"
             checked={included}
+            aria-label={`Include ${nodeName}`}
             onChange={handleCheckbox}
             onClick={(e) => e.stopPropagation()}
           />
@@ -87,7 +95,10 @@ export function ResultRow({ data, writeMode, pluginVersion, onIncludedChange }: 
 
         {/* Chevron last */}
         {!isUnsupported && hasMatch && (
-          <span class={`result-row__chevron${expanded ? " result-row__chevron--open" : ""}`}>▶</span>
+          <span
+            class={`result-row__chevron${expanded ? " result-row__chevron--open" : ""}`}
+            aria-hidden="true"
+          >▶</span>
         )}
 
         {data.writeError && (
