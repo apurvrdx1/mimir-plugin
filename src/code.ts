@@ -30,23 +30,48 @@ figma.ui.onmessage = async (msg: UiToPluginMessage) => {
 async function handleScanSelection(): Promise<void> {
   const selection = figma.currentPage.selection;
   const nodes: PluginNodeData[] = [];
+  const seenIds = new Set<string>();
+
+  function push(node: PluginNodeData): void {
+    if (seenIds.has(node.id)) return;
+    seenIds.add(node.id);
+    nodes.push(node);
+  }
 
   for (const node of selection) {
-    if (node.type === "COMPONENT" || node.type === "COMPONENT_SET") {
-      nodes.push({
-        id: node.id,
-        name: node.name,
-        nodeType: node.type,
-        existingDescription: node.description ?? "",
-      });
+    if (node.type === "COMPONENT_SET") {
+      const children = node.children.filter((c): c is ComponentNode => c.type === "COMPONENT");
+      const uniqueChildNames = new Set(children.map((c) => c.name));
+
+      if (children.length === 0 || uniqueChildNames.size <= 1) {
+        // Pattern A: style/size variants of one icon — treat the set as a single entry
+        push({ id: node.id, name: node.name, nodeType: "COMPONENT_SET", existingDescription: node.description ?? "" });
+      } else {
+        // Pattern B: different icons packed as variants — expand each child individually
+        for (const child of children) {
+          push({ id: child.id, name: child.name, nodeType: "COMPONENT", existingDescription: child.description ?? "" });
+        }
+      }
+    } else if (node.type === "COMPONENT") {
+      const parent = node.parent;
+      if (parent && parent.type === "COMPONENT_SET") {
+        // Variant selected directly — apply same pattern detection as above
+        const siblings = parent.children.filter((c): c is ComponentNode => c.type === "COMPONENT");
+        const uniqueSiblingNames = new Set(siblings.map((c) => c.name));
+
+        if (uniqueSiblingNames.size <= 1) {
+          // Pattern A: deduplicate to the parent set
+          push({ id: parent.id, name: parent.name, nodeType: "COMPONENT_SET", existingDescription: parent.description ?? "" });
+        } else {
+          // Pattern B: each variant is a different icon — use the individual child
+          push({ id: node.id, name: node.name, nodeType: "COMPONENT", existingDescription: node.description ?? "" });
+        }
+      } else {
+        // Standalone component
+        push({ id: node.id, name: node.name, nodeType: "COMPONENT", existingDescription: node.description ?? "" });
+      }
     } else {
-      nodes.push({
-        id: node.id,
-        name: node.name,
-        nodeType: "UNSUPPORTED",
-        existingDescription: "",
-        skipReason: `Unsupported node type: ${node.type}`,
-      });
+      push({ id: node.id, name: node.name, nodeType: "UNSUPPORTED", existingDescription: "", skipReason: `Unsupported node type: ${node.type}` });
     }
   }
 
