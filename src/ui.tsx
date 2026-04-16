@@ -159,8 +159,7 @@ function nodeToRowData(node: PluginNodeData): ResultRowData {
     matchResult,
     existingDescription: node.existingDescription,
     tags: baseTags,
-    included:
-      matchResult.confidence === "high" || matchResult.confidence === "medium",
+    included: matchResult.confidence !== "none",
   };
 }
 
