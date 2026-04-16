@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-scripts/
+src/data/compiled/icon-thesaurus.v1.json
+src/data/sources/
+*.js.map
+documentation_notes/
