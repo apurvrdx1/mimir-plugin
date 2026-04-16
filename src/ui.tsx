@@ -7,12 +7,6 @@ import {
   composeDescription,
   deduplicateTags,
 } from "./core/description";
-import {
-  createSessionReport,
-  addReportItem,
-  finalizeReport,
-  exportReportAsJson,
-} from "./core/report";
 import type { ThesaurusIndex } from "./core/match";
 import type { WriteMode } from "./core/description";
 import type {
@@ -20,6 +14,8 @@ import type {
   UiToPluginMessage,
   PluginNodeData,
   WriteItem,
+  ChangelogEntry,
+  ChangelogMeta,
 } from "./types";
 import type { CompiledIconThesaurus } from "./schema/compiled-dataset";
 import { Header } from "./components/Header";
@@ -40,8 +36,8 @@ const index: ThesaurusIndex = buildThesaurusIndex(thesaurus);
 
 // ── Signals ────────────────────────────────────────────────────────────────
 const rows = signal<ResultRowData[]>([]);
-const writeMode = signal<WriteMode>("merge");
-const includeLowConfidence = signal(false);
+const writeMode = signal<WriteMode>("append");
+const includeLowConfidence = signal(true);
 const isScanning = signal(false);
 const isWriting = signal(false);
 
@@ -66,6 +62,15 @@ const includedRows = computed(() =>
   rows.value.filter((r) => r.included && r.matchResult.entry !== null)
 );
 
+// ── Pending write context (for changelog dispatch after WRITE_RESULT) ───────
+interface PendingWriteContext {
+  writtenRows: ResultRowData[];
+  mode: WriteMode;
+  dateStr: string;
+  timeStr: string;
+}
+let pendingWrite: PendingWriteContext | null = null;
+
 // ── postMessage handlers ────────────────────────────────────────────────────
 window.onmessage = (event: MessageEvent) => {
   const msg = event.data?.pluginMessage as PluginToUiMessage | undefined;
@@ -82,6 +87,36 @@ window.onmessage = (event: MessageEvent) => {
       if (!result) return row;
       return { ...row, writeError: result.success ? undefined : result.error };
     });
+
+    // Dispatch changelog creation for successfully written items
+    if (pendingWrite) {
+      const { writtenRows, mode, dateStr, timeStr } = pendingWrite;
+      const successIds = new Set(
+        msg.results.filter((r) => r.success).map((r) => r.nodeId)
+      );
+      const entries: ChangelogEntry[] = writtenRows
+        .filter((r) => successIds.has(r.nodeId))
+        .map((r) => ({ componentName: r.nodeName, tags: r.tags }));
+
+      if (entries.length > 0) {
+        const source = thesaurus.sources[0]?.sourceId ?? "phosphor";
+        const changelogMeta: ChangelogMeta = {
+          date: dateStr,
+          time: timeStr,
+          writeMode: mode,
+          source,
+          pluginVersion: PLUGIN_VERSION,
+          totalWritten: entries.length,
+        };
+        const changelogMsg: UiToPluginMessage = {
+          type: "CREATE_CHANGELOG",
+          entries,
+          meta: changelogMeta,
+        };
+        parent.postMessage({ pluginMessage: changelogMsg }, "*");
+      }
+      pendingWrite = null;
+    }
   }
 };
 
@@ -141,64 +176,33 @@ function writeDescriptions() {
   const toWrite = includedRows.value;
   if (toWrite.length === 0) return;
 
-  const report = createSessionReport({
-    pluginVersion: PLUGIN_VERSION,
-    thesaurusVersion: thesaurus.datasetVersion,
-    schemaVersion: thesaurus.schemaVersion,
-    writeMode: writeMode.value,
-  });
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const timeStr = now.toTimeString().slice(0, 5);
 
   const items: WriteItem[] = toWrite.map((row) => {
     const mimirBlock =
       row.matchResult.entry !== null
-        ? formatMimirBlock(
-            row.matchResult.entry,
-            row.tags,
-            row.matchResult,
-            PLUGIN_VERSION
-          )
+        ? formatMimirBlock(row.tags, PLUGIN_VERSION, dateStr)
         : "";
     const finalDescription = composeDescription(
       row.existingDescription,
       mimirBlock,
       writeMode.value
     );
-
-    addReportItem(report, {
-      nodeId: row.nodeId,
-      nodeName: row.nodeName,
-      nodeType: row.nodeType,
-      normalizedName: row.normalizedName,
-      matchResult: row.matchResult,
-      proposedTags: row.tags,
-      existingDescription: row.existingDescription,
-      finalDescription,
-      written: true,
-      skipped: false,
-    });
-
     return { nodeId: row.nodeId, finalDescription };
   });
 
-  currentReport = finalizeReport(report);
+  pendingWrite = {
+    writtenRows: toWrite,
+    mode: writeMode.value,
+    dateStr,
+    timeStr,
+  };
 
   isWriting.value = true;
   const msg: UiToPluginMessage = { type: "WRITE_DESCRIPTIONS", items };
   parent.postMessage({ pluginMessage: msg }, "*");
-}
-
-let currentReport: ReturnType<typeof finalizeReport> | null = null;
-
-function exportReport() {
-  if (!currentReport) return;
-  const json = exportReportAsJson(currentReport);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `mimir-report-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 function copyUnmatched() {
@@ -263,7 +267,6 @@ function App() {
         isWriting={isWriting.value}
         hasResults={hasResults}
         onCopyUnmatched={copyUnmatched}
-        onExportReport={exportReport}
         unmatchedCount={unmatchedCount.value}
       />
       {showEmpty ? (

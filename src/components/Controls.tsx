@@ -12,7 +12,6 @@ interface ControlsProps {
   isWriting: boolean;
   hasResults: boolean;
   onCopyUnmatched: () => void;
-  onExportReport: () => void;
   unmatchedCount: number;
 }
 
@@ -22,7 +21,7 @@ export function Controls({
   onScan, onWrite, writeMode, onWriteModeChange,
   includeLowConfidence, onIncludeLowConfidenceChange,
   isScanning, isWriting, hasResults,
-  onCopyUnmatched, onExportReport, unmatchedCount,
+  onCopyUnmatched, unmatchedCount,
 }: ControlsProps) {
   return (
     <div class="controls">
@@ -67,15 +66,10 @@ export function Controls({
           Include low-confidence matches
         </label>
       </div>
-      {hasResults && (
+      {hasResults && unmatchedCount > 0 && (
         <div class="controls__row">
-          {unmatchedCount > 0 && (
-            <button class="btn btn--small btn--ghost" onClick={onCopyUnmatched}>
-              Copy unmatched ({unmatchedCount})
-            </button>
-          )}
-          <button class="btn btn--small btn--ghost" onClick={onExportReport}>
-            Export JSON
+          <button class="btn btn--small btn--ghost" onClick={onCopyUnmatched}>
+            Copy unmatched ({unmatchedCount})
           </button>
         </div>
       )}

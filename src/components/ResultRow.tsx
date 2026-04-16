@@ -88,9 +88,10 @@ export function ResultRow({
       ? data.existingDescription.slice(0, 97) + "…"
       : data.existingDescription;
 
+  const today = new Date().toISOString().slice(0, 10);
   const finalDescPreview =
     matchResult.entry !== null
-      ? formatMimirBlock(matchResult.entry, tags, matchResult, pluginVersion)
+      ? formatMimirBlock(tags, pluginVersion, today)
       : null;
 
   return (

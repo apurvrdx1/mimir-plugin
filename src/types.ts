@@ -5,7 +5,8 @@
 // Messages sent from UI → Plugin sandbox
 export type UiToPluginMessage =
   | { type: "SCAN_SELECTION" }
-  | { type: "WRITE_DESCRIPTIONS"; items: WriteItem[] };
+  | { type: "WRITE_DESCRIPTIONS"; items: WriteItem[] }
+  | { type: "CREATE_CHANGELOG"; entries: ChangelogEntry[]; meta: ChangelogMeta };
 
 // Messages sent from Plugin sandbox → UI
 export type PluginToUiMessage =
@@ -30,4 +31,18 @@ export interface WriteResult {
   nodeId: string;
   success: boolean;
   error?: string;
+}
+
+export interface ChangelogEntry {
+  componentName: string;
+  tags: string[];
+}
+
+export interface ChangelogMeta {
+  date: string;
+  time: string;
+  writeMode: string;
+  source: string;
+  pluginVersion: string;
+  totalWritten: number;
 }

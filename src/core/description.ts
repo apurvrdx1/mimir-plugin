@@ -1,68 +1,49 @@
-import { SCHEMA_VERSION } from "../schema/icon-thesaurus";
-import type { IconSemanticEntry } from "../schema/icon-thesaurus";
-import type { MatchResult } from "./match";
+export const MIMIR_SEPARATOR = "______________";
 
-export const MIMIR_BLOCK_START = "[mimir:start]";
-export const MIMIR_BLOCK_END = "[mimir:end]";
+/** Matches the start of a Mimir-managed block at the end of a description. */
+const MIMIR_BLOCK_PATTERN = /\n?_{10,}\nsearch tags:/;
 
 export type WriteMode = "merge" | "append" | "replace";
 
 export interface ParsedDescription {
   /** Text BEFORE the mimir block (trimmed). */
   userContent: string;
-  /** The existing mimir block text (between sentinels, trimmed), or null if absent. */
+  /** The existing mimir block text (from separator onward, trimmed), or null if absent. */
   mimirBlock: string | null;
 }
 
 /**
  * Split an existing description into user-authored content and the Mimir-managed block.
+ * Detects the new underscores-separator format.
  */
 export function parseExistingDescription(text: string): ParsedDescription {
-  const startIdx = text.indexOf(MIMIR_BLOCK_START);
-  const endIdx = text.indexOf(MIMIR_BLOCK_END);
-
-  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+  const match = MIMIR_BLOCK_PATTERN.exec(text);
+  if (!match) {
     return { userContent: text.trim(), mimirBlock: null };
   }
-
-  const userContent = text.slice(0, startIdx).trim();
-  const mimirBlock = text
-    .slice(startIdx + MIMIR_BLOCK_START.length, endIdx)
-    .trim();
-
+  const userContent = text.slice(0, match.index).trim();
+  const mimirBlock = text.slice(match.index).trim();
   return { userContent, mimirBlock };
 }
 
 /**
- * Build the Mimir-managed block that gets written into a component description.
+ * Build the Mimir-managed block written into a component description.
  *
  * Example output:
  * ```
- * [mimir:start]
- * Search tags: delete, trash, trash can, dustbin, remove, discard, bin
- * Source: phosphor · matched: delete · confidence: high
- * Mimir: 1.0.0 · schema: 1.0.0
- * [mimir:end]
+ * ______________
+ * search tags: delete, trash, trash can, dustbin, remove, discard, bin
+ * mimir 1.0.0 · added: 2026-04-16
  * ```
  */
 export function formatMimirBlock(
-  entry: IconSemanticEntry,
   tags: string[],
-  matchResult: MatchResult,
-  pluginVersion: string
+  pluginVersion: string,
+  date: string
 ): string {
-  const sourceId =
-    entry.sourceAttributions.length > 0
-      ? entry.sourceAttributions[0].sourceId
-      : "unknown";
-
-  const tagLine = `Search tags: ${tags.join(", ")}`;
-  const sourceLine = `Source: ${sourceId} · matched: ${entry.canonicalName} · confidence: ${matchResult.confidence}`;
-  const versionLine = `Mimir: ${pluginVersion} · schema: ${SCHEMA_VERSION}`;
-
-  return [MIMIR_BLOCK_START, tagLine, sourceLine, versionLine, MIMIR_BLOCK_END].join(
-    "\n"
-  );
+  const tagLine = `search tags: ${tags.join(", ")}`;
+  const metaLine = `mimir ${pluginVersion} · added: ${date}`;
+  return [MIMIR_SEPARATOR, tagLine, metaLine].join("\n");
 }
 
 /**
@@ -86,17 +67,13 @@ export function composeDescription(
 
     case "append": {
       const trimmed = existing.trim();
-      if (trimmed === "") {
-        return newMimirBlock;
-      }
+      if (trimmed === "") return newMimirBlock;
       return `${trimmed}\n\n${newMimirBlock}`;
     }
 
     case "merge": {
       const { userContent } = parseExistingDescription(existing);
-      if (userContent === "") {
-        return newMimirBlock;
-      }
+      if (userContent === "") return newMimirBlock;
       return `${userContent}\n\n${newMimirBlock}`;
     }
   }
