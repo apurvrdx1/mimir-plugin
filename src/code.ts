@@ -232,9 +232,10 @@ async function handleCreateChangelog(
       writeFrame.appendChild(noChangeHeader);
       noChangeHeader.fontName = { family: "Inter", style: "Regular" };
       noChangeHeader.fontSize = 10;
-      noChangeHeader.characters = "no changes — tags already up to date";
+      noChangeHeader.characters = "No changes — tags already up to date";
+      noChangeHeader.setRangeFontName(0, 10, { family: "Inter", style: "Medium" });
       noChangeHeader.layoutSizingHorizontal = "FILL";
-      noChangeHeader.fills = [{ type: "SOLID", color: { r: 0.6, g: 0.6, b: 0.6 } }];
+      noChangeHeader.fills = [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }];
 
       const namesNode = figma.createText();
       writeFrame.appendChild(namesNode);
@@ -245,7 +246,7 @@ async function handleCreateChangelog(
       namesNode.textAutoResize = "HEIGHT";
       namesNode.layoutSizingHorizontal = "FILL";
       namesNode.layoutSizingVertical = "HUG";
-      namesNode.fills = [{ type: "SOLID", color: { r: 0.65, g: 0.65, b: 0.65 } }];
+      namesNode.fills = [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }];
     }
 
     // Return to the user's original page immediately
