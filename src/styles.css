@@ -139,7 +139,7 @@ input[type="checkbox"]:checked::after {
 
 /* ── Empty state ── */
 .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 32px 20px; text-align: center; flex: 1; }
-.empty__icon { font-size: 24px; opacity: 0.3; }
+.empty__icon { font-size: 48px; opacity: 0.3; }
 .empty__title { font-size: 11px; font-weight: 600; color: var(--text); }
 .empty__body { font-size: 10px; color: var(--text-secondary); }
 
