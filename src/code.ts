@@ -90,6 +90,8 @@ async function handleCreateChangelog(
       page = figma.createPage();
       page.name = "mimir changelog";
     }
+    // Must load the page before accessing its children
+    await page.loadAsync();
 
     // Layout constants
     const FRAME_WIDTH = 420;
