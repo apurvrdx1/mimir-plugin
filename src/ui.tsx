@@ -42,6 +42,7 @@ const isScanning = signal(false);
 const isWriting = signal(false);
 const showWritingIndicator = signal(false);
 const customPrefix = signal("");
+const prefixSource = signal<"stored" | "user" | null>(null);
 let writingIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Derived
@@ -102,6 +103,15 @@ window.onmessage = (event: MessageEvent) => {
   if (msg.type === "SELECTION_RESULT") {
     isScanning.value = false;
     rows.value = msg.nodes.map((node) => nodeToRowData(node));
+    // Auto-apply stored prefixes from previous runs
+    if (msg.storedPrefixes) {
+      customPrefix.value = msg.storedPrefixes;
+      prefixSource.value = "stored";
+      rematch(msg.storedPrefixes);
+    } else {
+      customPrefix.value = "";
+      prefixSource.value = null;
+    }
   } else if (msg.type === "WRITE_RESULT") {
     isWriting.value = false;
     if (writingIndicatorTimer) { clearTimeout(writingIndicatorTimer); writingIndicatorTimer = null; }
@@ -266,12 +276,20 @@ function writeDescriptions() {
   parent.postMessage({ pluginMessage: msg }, "*");
 }
 
-function rematch() {
-  const prefix = customPrefix.value.trim();
-  if (!prefix) return;
-  // Escape regex special chars in the user-supplied prefix
-  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`^${escaped}[-._/]?`, "i");
+const CONFIDENCE_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, none: 0 };
+
+function rematch(overridePrefixes?: string) {
+  const raw = (overridePrefixes ?? customPrefix.value).trim();
+  if (!raw) return;
+
+  // Split comma-separated prefixes, build regex patterns for each
+  const prefixes = raw.split(",").map((p) => p.trim()).filter(Boolean);
+  if (prefixes.length === 0) return;
+
+  const patterns = prefixes.map((p) => {
+    const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, () => "\\$&");
+    return new RegExp(`^${escaped}[-._/]?`, "i");
+  });
 
   const isCandidate = (row: ResultRowData) =>
     row.nodeType !== "UNSUPPORTED" &&
@@ -280,22 +298,32 @@ function rematch() {
 
   rows.value = rows.value.map((row) => {
     if (!isCandidate(row)) return row;
-    const stripped = row.nodeName.replace(pattern, "").trim();
-    if (!stripped || stripped === row.nodeName) return row;
-    const { normalized, steps } = normalizeName(stripped);
-    const matchResult = matchIcon(normalized, index);
-    const baseTags = matchResult.entry
-      ? deduplicateTags([...matchResult.entry.tags, ...(matchResult.entry.aliases ?? [])])
-      : [];
-    return {
-      ...row,
-      normalizedName: normalized,
-      normalizationSteps: steps,
-      matchResult,
-      tags: baseTags,
-      included: matchResult.confidence !== "none",
-    };
+
+    // Try each prefix, keep the best result
+    let best: ResultRowData | null = null;
+    for (const pattern of patterns) {
+      const stripped = row.nodeName.replace(pattern, "").trim();
+      if (!stripped || stripped === row.nodeName) continue;
+      const { normalized, steps } = normalizeName(stripped);
+      const matchResult = matchIcon(normalized, index);
+      if (
+        !best ||
+        CONFIDENCE_RANK[matchResult.confidence] > CONFIDENCE_RANK[best.matchResult.confidence]
+      ) {
+        const baseTags = matchResult.entry
+          ? deduplicateTags([...matchResult.entry.tags, ...(matchResult.entry.aliases ?? [])])
+          : [];
+        best = { ...row, normalizedName: normalized, normalizationSteps: steps, matchResult, tags: baseTags, included: matchResult.confidence !== "none" };
+      }
+    }
+    return best ?? row;
   });
+
+  // Persist to document (best-effort, fire and forget)
+  if (!overridePrefixes) {
+    prefixSource.value = "user";
+    parent.postMessage({ pluginMessage: { type: "SAVE_PREFIXES", prefixes: raw } as UiToPluginMessage }, "*");
+  }
 }
 
 function copyUnmatched() {
@@ -353,9 +381,10 @@ function App() {
         onCopyUnmatched={copyUnmatched}
         unmatchedCount={unmatchedCount.value}
         customPrefix={customPrefix.value}
-        onCustomPrefixChange={(v) => { customPrefix.value = v; }}
+        onCustomPrefixChange={(v) => { customPrefix.value = v; prefixSource.value = "user"; }}
         onRematch={rematch}
         showPrefixHint={unmatchedCount.value > 0 || lowWithSeparators.value > 0}
+        prefixSource={prefixSource.value}
       />
       <div class="result-area">
         {showEmpty ? (

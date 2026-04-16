@@ -58,6 +58,7 @@ body { width: 320px; height: 560px; overflow: hidden; display: flex; flex-direct
 }
 .controls__prefix-input:focus { border-color: var(--brand); }
 .controls__prefix-input::placeholder { color: var(--text-disabled); }
+.controls__prefix-note { font-size: 9px; color: var(--text-secondary); padding: 0 2px; }
 
 /* ── Buttons ── */
 .btn {

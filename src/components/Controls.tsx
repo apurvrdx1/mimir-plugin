@@ -15,6 +15,7 @@ interface ControlsProps {
   onCustomPrefixChange: (v: string) => void;
   onRematch: () => void;
   showPrefixHint: boolean;
+  prefixSource: "stored" | "user" | null;
 }
 
 const MODES: WriteMode[] = ["merge", "append"];
@@ -23,7 +24,7 @@ export function Controls({
   writeMode, onWriteModeChange,
   includeLowConfidence, onIncludeLowConfidenceChange,
   isScanning, isWriting, hasResults, onCopyUnmatched, unmatchedCount,
-  customPrefix, onCustomPrefixChange, onRematch, showPrefixHint,
+  customPrefix, onCustomPrefixChange, onRematch, showPrefixHint, prefixSource,
 }: ControlsProps) {
   return (
     <div class="controls">
@@ -73,6 +74,9 @@ export function Controls({
             Re-match
           </button>
         </div>
+      )}
+      {prefixSource === "stored" && (
+        <div class="controls__prefix-note">↩ prefixes from last run auto-applied</div>
       )}
     </div>
   );

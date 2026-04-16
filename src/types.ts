@@ -6,11 +6,12 @@
 export type UiToPluginMessage =
   | { type: "SCAN_SELECTION" }
   | { type: "WRITE_DESCRIPTIONS"; items: WriteItem[] }
-  | { type: "CREATE_CHANGELOG"; entries: ChangelogEntry[]; unchangedEntries: ChangelogEntry[]; meta: ChangelogMeta };
+  | { type: "CREATE_CHANGELOG"; entries: ChangelogEntry[]; unchangedEntries: ChangelogEntry[]; meta: ChangelogMeta }
+  | { type: "SAVE_PREFIXES"; prefixes: string };
 
 // Messages sent from Plugin sandbox → UI
 export type PluginToUiMessage =
-  | { type: "SELECTION_RESULT"; nodes: PluginNodeData[] }
+  | { type: "SELECTION_RESULT"; nodes: PluginNodeData[]; storedPrefixes?: string }
   | { type: "WRITE_RESULT"; results: WriteResult[] };
 
 export interface PluginNodeData {

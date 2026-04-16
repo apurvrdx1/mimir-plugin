@@ -23,6 +23,101 @@ function extractVariantName(name: string): string {
   return value.length > 0 ? value : name;
 }
 
+const CHANGELOG_PAGE_NAME = "mimir changelog";
+const PREFIXES_FRAME_NAME = "mimir prefixes";
+
+/** Read stored prefixes from the changelog page. Returns empty string if not found. */
+async function readStoredPrefixes(): Promise<string> {
+  const page = figma.root.children.find(
+    (p): p is PageNode => p.type === "PAGE" && p.name === CHANGELOG_PAGE_NAME
+  );
+  if (!page) return "";
+  await page.loadAsync();
+  const frame = page.children.find(
+    (n) => n.type === "FRAME" && n.name === PREFIXES_FRAME_NAME
+  ) as FrameNode | undefined;
+  if (!frame) return "";
+  const textNode = frame.children.find((n) => n.type === "TEXT" && n.name === "prefixes-value") as TextNode | undefined;
+  return textNode?.characters.trim() ?? "";
+}
+
+/** Write prefixes to a dedicated frame on the changelog page. */
+async function handleSavePrefixes(prefixes: string): Promise<void> {
+  const originalPage = figma.currentPage;
+  try {
+    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+
+    let page = figma.root.children.find(
+      (p): p is PageNode => p.type === "PAGE" && p.name === CHANGELOG_PAGE_NAME
+    );
+    if (!page) {
+      page = figma.createPage();
+      page.name = CHANGELOG_PAGE_NAME;
+    }
+    await page.loadAsync();
+    await figma.setCurrentPageAsync(page);
+
+    // Find or create the prefixes frame
+    let frame = page.children.find(
+      (n) => n.type === "FRAME" && n.name === PREFIXES_FRAME_NAME
+    ) as FrameNode | undefined;
+
+    if (!frame) {
+      frame = figma.createFrame();
+      frame.name = PREFIXES_FRAME_NAME;
+      frame.resize(210, 80);
+      frame.x = -230;
+      frame.y = 0;
+      frame.layoutMode = "VERTICAL";
+      frame.primaryAxisSizingMode = "AUTO";
+      frame.counterAxisSizingMode = "FIXED";
+      frame.paddingTop = 12;
+      frame.paddingBottom = 12;
+      frame.paddingLeft = 12;
+      frame.paddingRight = 12;
+      frame.itemSpacing = 4;
+      frame.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+
+      const titleNode = figma.createText();
+      frame.appendChild(titleNode);
+      titleNode.name = "prefixes-title";
+      titleNode.fontName = { family: "Inter", style: "Medium" };
+      titleNode.fontSize = 11;
+      titleNode.characters = "mimir prefixes";
+      titleNode.layoutSizingHorizontal = "FILL";
+      titleNode.fills = [{ type: "SOLID", color: { r: 0.1, g: 0.1, b: 0.1 } }];
+
+      const hintNode = figma.createText();
+      frame.appendChild(hintNode);
+      hintNode.name = "prefixes-hint";
+      hintNode.fontName = { family: "Inter", style: "Regular" };
+      hintNode.fontSize = 10;
+      hintNode.characters = "Comma-separated prefixes stripped before matching";
+      hintNode.layoutSizingHorizontal = "FILL";
+      hintNode.fills = [{ type: "SOLID", color: { r: 0.55, g: 0.55, b: 0.55 } }];
+    }
+
+    // Find or create the value text node
+    let valueNode = frame.children.find((n) => n.name === "prefixes-value") as TextNode | undefined;
+    if (!valueNode) {
+      valueNode = figma.createText();
+      frame.appendChild(valueNode);
+      valueNode.name = "prefixes-value";
+      valueNode.fontName = { family: "Inter", style: "Regular" };
+      valueNode.fontSize = 11;
+      valueNode.layoutSizingHorizontal = "FILL";
+      valueNode.fills = [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }];
+    }
+    valueNode.characters = prefixes;
+
+  } catch (err) {
+    // Non-fatal — prefix saving is best-effort
+  } finally {
+    await figma.setCurrentPageAsync(originalPage);
+  }
+}
+
 figma.ui.onmessage = async (msg: UiToPluginMessage) => {
   if (msg.type === "SCAN_SELECTION") {
     await handleScanSelection();
@@ -38,6 +133,9 @@ figma.ui.onmessage = async (msg: UiToPluginMessage) => {
       return;
     }
     await handleCreateChangelog(msg.entries, msg.unchangedEntries, msg.meta);
+  } else if (msg.type === "SAVE_PREFIXES") {
+    if (typeof msg.prefixes !== "string") return;
+    await handleSavePrefixes(msg.prefixes);
   }
 };
 
@@ -89,7 +187,8 @@ async function handleScanSelection(): Promise<void> {
     }
   }
 
-  const response: PluginToUiMessage = { type: "SELECTION_RESULT", nodes };
+  const storedPrefixes = await readStoredPrefixes();
+  const response: PluginToUiMessage = { type: "SELECTION_RESULT", nodes, storedPrefixes: storedPrefixes || undefined };
   figma.ui.postMessage(response);
 }
 
