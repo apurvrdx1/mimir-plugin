@@ -14,6 +14,7 @@ interface ControlsProps {
   customPrefix: string;
   onCustomPrefixChange: (v: string) => void;
   onRematch: () => void;
+  showPrefixHint: boolean;
 }
 
 const MODES: WriteMode[] = ["merge", "append"];
@@ -22,7 +23,7 @@ export function Controls({
   writeMode, onWriteModeChange,
   includeLowConfidence, onIncludeLowConfidenceChange,
   isScanning, isWriting, hasResults, onCopyUnmatched, unmatchedCount,
-  customPrefix, onCustomPrefixChange, onRematch,
+  customPrefix, onCustomPrefixChange, onRematch, showPrefixHint,
 }: ControlsProps) {
   return (
     <div class="controls">
@@ -49,11 +50,13 @@ export function Controls({
           Low confidence
         </label>
       </div>
-      {hasResults && unmatchedCount > 0 && (
+      {hasResults && (unmatchedCount > 0 || showPrefixHint) && (
         <div class="controls__row">
-          <button class="btn btn--small btn--ghost" onClick={onCopyUnmatched}>
-            Copy unmatched ({unmatchedCount})
-          </button>
+          {unmatchedCount > 0 && (
+            <button class="btn btn--small btn--ghost" onClick={onCopyUnmatched}>
+              Copy unmatched ({unmatchedCount})
+            </button>
+          )}
           <input
             class="controls__prefix-input"
             type="text"

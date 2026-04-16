@@ -64,6 +64,16 @@ const skippedCount = computed(
 const includedRows = computed(() =>
   rows.value.filter((r) => r.included && r.matchResult.entry !== null)
 );
+// Rows that are low-confidence AND have separator characters in the name —
+// these are candidates for prefix-strip re-matching
+const lowWithSeparators = computed(() =>
+  rows.value.filter(
+    (r) =>
+      r.matchResult.confidence === "low" &&
+      r.nodeType !== "UNSUPPORTED" &&
+      /[-_./]/.test(r.nodeName)
+  ).length
+);
 
 // ── Pending write context (for changelog dispatch after WRITE_RESULT) ───────
 interface PendingWriteContext {
@@ -263,8 +273,13 @@ function rematch() {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`^${escaped}[-._/]?`, "i");
 
+  const isCandidate = (row: ResultRowData) =>
+    row.nodeType !== "UNSUPPORTED" &&
+    (row.matchResult.confidence === "none" ||
+      (row.matchResult.confidence === "low" && /[-_./]/.test(row.nodeName)));
+
   rows.value = rows.value.map((row) => {
-    if (row.matchResult.confidence !== "none" || row.nodeType === "UNSUPPORTED") return row;
+    if (!isCandidate(row)) return row;
     const stripped = row.nodeName.replace(pattern, "").trim();
     if (!stripped || stripped === row.nodeName) return row;
     const { normalized, steps } = normalizeName(stripped);
@@ -340,6 +355,7 @@ function App() {
         customPrefix={customPrefix.value}
         onCustomPrefixChange={(v) => { customPrefix.value = v; }}
         onRematch={rematch}
+        showPrefixHint={unmatchedCount.value > 0 || lowWithSeparators.value > 0}
       />
       <div class="result-area">
         {showEmpty ? (

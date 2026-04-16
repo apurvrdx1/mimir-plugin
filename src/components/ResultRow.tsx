@@ -82,17 +82,11 @@ export function ResultRow({ data, writeMode, pluginVersion, onIncludedChange }: 
         <div class="result-row__main">
           <span class="result-row__name" title={nodeName}>{nodeName}</span>
           {isUnsupported ? (
-            <span class="badge badge--none">skipped</span>
+            <span class="text-secondary" style="font-size:10px;font-style:italic;">skipped</span>
           ) : tags.length > 0 ? (
-            <div class="result-row__tag-row">
-              <ConfidenceBadge confidence={matchResult.confidence} />
-              <span class="result-row__tag-list">{tags.join(", ")}</span>
-            </div>
+            <span class="result-row__tag-list">{tags.join(", ")}</span>
           ) : matchResult.confidence === "none" ? (
-            <div class="result-row__tag-row">
-              <ConfidenceBadge confidence="none" />
-              <span class="result-row__tag-list result-row__tag-list--muted">no match</span>
-            </div>
+            <span class="result-row__tag-list result-row__tag-list--muted">no match</span>
           ) : null}
         </div>
 
