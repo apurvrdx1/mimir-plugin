@@ -333,4 +333,7 @@ function App() {
   );
 }
 
+// Auto-scan on open so any existing selection is picked up immediately
+scanSelection();
+
 render(<App />, document.getElementById("app")!);

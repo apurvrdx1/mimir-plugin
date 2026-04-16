@@ -220,14 +220,6 @@ async function handleCreateChangelog(
 
     // "No changes" section — items whose tags were already up to date
     if (unchangedEntries.length > 0) {
-      const noChangeSep = figma.createFrame();
-      writeFrame.appendChild(noChangeSep);
-      noChangeSep.name = "no-changes-sep";
-      noChangeSep.resize(FRAME_WIDTH - PADDING * 2, 1);
-      noChangeSep.layoutSizingHorizontal = "FILL";
-      noChangeSep.layoutSizingVertical = "FIXED";
-      noChangeSep.fills = [{ type: "SOLID", color: { r: 0.88, g: 0.88, b: 0.88 } }];
-
       const noChangeHeader = figma.createText();
       writeFrame.appendChild(noChangeHeader);
       noChangeHeader.fontName = { family: "Inter", style: "Regular" };
@@ -236,16 +228,16 @@ async function handleCreateChangelog(
       noChangeHeader.layoutSizingHorizontal = "FILL";
       noChangeHeader.fills = [{ type: "SOLID", color: { r: 0.6, g: 0.6, b: 0.6 } }];
 
-      for (const entry of unchangedEntries) {
-        const nameNode = figma.createText();
-        writeFrame.appendChild(nameNode);
-        nameNode.fontName = { family: "Inter", style: "Regular" };
-        nameNode.fontSize = 11;
-        nameNode.characters = entry.componentName;
-        nameNode.layoutSizingHorizontal = "FILL";
-        nameNode.textAutoResize = "HEIGHT";
-        nameNode.fills = [{ type: "SOLID", color: { r: 0.65, g: 0.65, b: 0.65 } }];
-      }
+      const namesNode = figma.createText();
+      writeFrame.appendChild(namesNode);
+      namesNode.fontName = { family: "Inter", style: "Regular" };
+      namesNode.fontSize = 11;
+      namesNode.characters = unchangedEntries.map((e) => e.componentName).join(", ");
+      namesNode.resize(FRAME_WIDTH - PADDING * 2, namesNode.height);
+      namesNode.textAutoResize = "HEIGHT";
+      namesNode.layoutSizingHorizontal = "FILL";
+      namesNode.layoutSizingVertical = "HUG";
+      namesNode.fills = [{ type: "SOLID", color: { r: 0.65, g: 0.65, b: 0.65 } }];
     }
 
     // Return to the user's original page immediately
