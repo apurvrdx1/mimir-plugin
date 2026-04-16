@@ -6,7 +6,7 @@
 export type UiToPluginMessage =
   | { type: "SCAN_SELECTION" }
   | { type: "WRITE_DESCRIPTIONS"; items: WriteItem[] }
-  | { type: "CREATE_CHANGELOG"; entries: ChangelogEntry[]; meta: ChangelogMeta };
+  | { type: "CREATE_CHANGELOG"; entries: ChangelogEntry[]; unchangedEntries: ChangelogEntry[]; meta: ChangelogMeta };
 
 // Messages sent from Plugin sandbox → UI
 export type PluginToUiMessage =

@@ -15,7 +15,7 @@ figma.ui.onmessage = async (msg: UiToPluginMessage) => {
   } else if (msg.type === "WRITE_DESCRIPTIONS") {
     await handleWriteDescriptions(msg.items);
   } else if (msg.type === "CREATE_CHANGELOG") {
-    await handleCreateChangelog(msg.entries, msg.meta);
+    await handleCreateChangelog(msg.entries, msg.unchangedEntries, msg.meta);
   }
 };
 
@@ -76,6 +76,7 @@ async function handleWriteDescriptions(
 
 async function handleCreateChangelog(
   entries: ChangelogEntry[],
+  unchangedEntries: ChangelogEntry[],
   meta: ChangelogMeta
 ): Promise<void> {
   try {
@@ -199,6 +200,39 @@ async function handleCreateChangelog(
       rowSep.layoutSizingHorizontal = "FILL";
       rowSep.layoutSizingVertical = "FIXED";
       rowSep.fills = [{ type: "SOLID", color: { r: 0.93, g: 0.93, b: 0.93 } }];
+    }
+
+    // "No changes" section — items whose tags were already up to date
+    if (unchangedEntries.length > 0) {
+      // Section separator
+      const noChangeSep = figma.createFrame();
+      writeFrame.appendChild(noChangeSep);
+      noChangeSep.name = "no-changes-sep";
+      noChangeSep.resize(FRAME_WIDTH - PADDING * 2, 1);
+      noChangeSep.layoutSizingHorizontal = "FILL";
+      noChangeSep.layoutSizingVertical = "FIXED";
+      noChangeSep.fills = [{ type: "SOLID", color: { r: 0.88, g: 0.88, b: 0.88 } }];
+
+      // Section header
+      const noChangeHeader = figma.createText();
+      writeFrame.appendChild(noChangeHeader);
+      noChangeHeader.fontName = { family: "Inter", style: "Regular" };
+      noChangeHeader.fontSize = 10;
+      noChangeHeader.characters = "no changes — tags already up to date";
+      noChangeHeader.layoutSizingHorizontal = "FILL";
+      noChangeHeader.fills = [{ type: "SOLID", color: { r: 0.6, g: 0.6, b: 0.6 } }];
+
+      // One row per unchanged item (name only, dimmed)
+      for (const entry of unchangedEntries) {
+        const nameNode = figma.createText();
+        writeFrame.appendChild(nameNode);
+        nameNode.fontName = { family: "Inter", style: "Regular" };
+        nameNode.fontSize = 11;
+        nameNode.characters = entry.componentName;
+        nameNode.layoutSizingHorizontal = "FILL";
+        nameNode.textAutoResize = "HEIGHT";
+        nameNode.fills = [{ type: "SOLID", color: { r: 0.65, g: 0.65, b: 0.65 } }];
+      }
     }
 
     // Navigate to the changelog page

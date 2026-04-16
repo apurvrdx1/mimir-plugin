@@ -80,6 +80,21 @@ export function composeDescription(
 }
 
 /**
+ * Extract the tag array from the Mimir block already present in a description.
+ * Returns null if no Mimir block is found.
+ */
+export function extractMimirTags(description: string): string[] | null {
+  const { mimirBlock } = parseExistingDescription(description);
+  if (!mimirBlock) return null;
+  const match = mimirBlock.match(/^search tags:\s*(.+)$/m);
+  if (!match) return null;
+  return match[1]
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+/**
  * Deduplicate a tag array, preserving first-occurrence casing.
  * Filters out empty strings after trimming.
  */

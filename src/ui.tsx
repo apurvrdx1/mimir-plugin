@@ -6,6 +6,7 @@ import {
   formatMimirBlock,
   composeDescription,
   deduplicateTags,
+  extractMimirTags,
 } from "./core/description";
 import type { ThesaurusIndex } from "./core/match";
 import type { WriteMode } from "./core/description";
@@ -65,11 +66,21 @@ const includedRows = computed(() =>
 // ── Pending write context (for changelog dispatch after WRITE_RESULT) ───────
 interface PendingWriteContext {
   writtenRows: ResultRowData[];
+  unchangedRows: ResultRowData[];
   mode: WriteMode;
   dateStr: string;
   timeStr: string;
 }
 let pendingWrite: PendingWriteContext | null = null;
+
+/** True if proposed tags differ from what is already in the component description. */
+function hasTagsChanged(existingDesc: string, proposedTags: string[]): boolean {
+  const existing = extractMimirTags(existingDesc);
+  if (!existing) return true;
+  if (existing.length !== proposedTags.length) return true;
+  const setExisting = new Set(existing.map((t) => t.toLowerCase()));
+  return proposedTags.some((t) => !setExisting.has(t.toLowerCase()));
+}
 
 // ── postMessage handlers ────────────────────────────────────────────────────
 window.onmessage = (event: MessageEvent) => {
@@ -88,33 +99,35 @@ window.onmessage = (event: MessageEvent) => {
       return { ...row, writeError: result.success ? undefined : result.error };
     });
 
-    // Dispatch changelog creation for successfully written items
+    // Dispatch changelog creation
     if (pendingWrite) {
-      const { writtenRows, mode, dateStr, timeStr } = pendingWrite;
+      const { writtenRows, unchangedRows, mode, dateStr, timeStr } = pendingWrite;
       const successIds = new Set(
         msg.results.filter((r) => r.success).map((r) => r.nodeId)
       );
       const entries: ChangelogEntry[] = writtenRows
         .filter((r) => successIds.has(r.nodeId))
         .map((r) => ({ componentName: r.nodeName, tags: r.tags }));
+      const unchangedEntries: ChangelogEntry[] = unchangedRows.map((r) => ({
+        componentName: r.nodeName,
+        tags: r.tags,
+      }));
 
-      if (entries.length > 0) {
-        const source = thesaurus.sources[0]?.sourceId ?? "phosphor";
-        const changelogMeta: ChangelogMeta = {
+      const source = thesaurus.sources[0]?.sourceId ?? "phosphor";
+      const changelogMsg: UiToPluginMessage = {
+        type: "CREATE_CHANGELOG",
+        entries,
+        unchangedEntries,
+        meta: {
           date: dateStr,
           time: timeStr,
           writeMode: mode,
           source,
           pluginVersion: PLUGIN_VERSION,
           totalWritten: entries.length,
-        };
-        const changelogMsg: UiToPluginMessage = {
-          type: "CREATE_CHANGELOG",
-          entries,
-          meta: changelogMeta,
-        };
-        parent.postMessage({ pluginMessage: changelogMsg }, "*");
-      }
+        },
+      };
+      parent.postMessage({ pluginMessage: changelogMsg }, "*");
       pendingWrite = null;
     }
   }
@@ -178,8 +191,39 @@ function writeDescriptions() {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);
   const timeStr = now.toTimeString().slice(0, 5);
+  const source = thesaurus.sources[0]?.sourceId ?? "phosphor";
 
-  const items: WriteItem[] = toWrite.map((row) => {
+  // Split: rows where tags changed vs rows already up to date
+  const changed: ResultRowData[] = [];
+  const unchanged: ResultRowData[] = [];
+  for (const row of toWrite) {
+    if (hasTagsChanged(row.existingDescription, row.tags)) {
+      changed.push(row);
+    } else {
+      unchanged.push(row);
+    }
+  }
+
+  // If everything is already up to date, create changelog immediately (nothing to write)
+  if (changed.length === 0) {
+    const changelogMsg: UiToPluginMessage = {
+      type: "CREATE_CHANGELOG",
+      entries: [],
+      unchangedEntries: unchanged.map((r) => ({ componentName: r.nodeName, tags: r.tags })),
+      meta: {
+        date: dateStr,
+        time: timeStr,
+        writeMode: writeMode.value,
+        source,
+        pluginVersion: PLUGIN_VERSION,
+        totalWritten: 0,
+      },
+    };
+    parent.postMessage({ pluginMessage: changelogMsg }, "*");
+    return;
+  }
+
+  const items: WriteItem[] = changed.map((row) => {
     const mimirBlock =
       row.matchResult.entry !== null
         ? formatMimirBlock(row.tags, PLUGIN_VERSION, dateStr)
@@ -193,7 +237,8 @@ function writeDescriptions() {
   });
 
   pendingWrite = {
-    writtenRows: toWrite,
+    writtenRows: changed,
+    unchangedRows: unchanged,
     mode: writeMode.value,
     dateStr,
     timeStr,
