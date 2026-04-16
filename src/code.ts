@@ -228,6 +228,15 @@ async function handleCreateChangelog(
 
     // "No changes" section — items whose tags were already up to date
     if (unchangedEntries.length > 0) {
+      // 12px top padding (frame itemSpacing is 6, so add a 6px spacer to get 12px total)
+      const spacer = figma.createFrame();
+      writeFrame.appendChild(spacer);
+      spacer.name = "no-changes-spacer";
+      spacer.resize(FRAME_WIDTH - PADDING * 2, 6);
+      spacer.layoutSizingHorizontal = "FILL";
+      spacer.layoutSizingVertical = "FIXED";
+      spacer.fills = [];
+
       const noChangeHeader = figma.createText();
       writeFrame.appendChild(noChangeHeader);
       noChangeHeader.fontName = { family: "Inter", style: "Regular" };
