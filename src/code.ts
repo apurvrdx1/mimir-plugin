@@ -190,10 +190,19 @@ async function handleCreateChangelog(
       tagsText.layoutSizingHorizontal = "FILL";
       tagsText.layoutSizingVertical = "HUG";
       tagsText.fills = [{ type: "SOLID", color: { r: 0.4, g: 0.4, b: 0.4 } }];
+
+      // Row separator
+      const rowSep = figma.createFrame();
+      writeFrame.appendChild(rowSep);
+      rowSep.name = "row-sep";
+      rowSep.resize(FRAME_WIDTH - PADDING * 2, 1);
+      rowSep.layoutSizingHorizontal = "FILL";
+      rowSep.layoutSizingVertical = "FIXED";
+      rowSep.fills = [{ type: "SOLID", color: { r: 0.93, g: 0.93, b: 0.93 } }];
     }
 
     // Navigate to the changelog page
-    figma.currentPage = page;
+    await figma.setCurrentPageAsync(page);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     figma.notify(`Could not create changelog: ${message}`, { error: true });
