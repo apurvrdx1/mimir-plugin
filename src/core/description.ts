@@ -1,9 +1,9 @@
 export const MIMIR_SEPARATOR = "______________";
 
 /** Matches the start of a Mimir-managed block at the end of a description. */
-const MIMIR_BLOCK_PATTERN = /\n?_{10,}\nsearch tags:/;
+const MIMIR_BLOCK_PATTERN = /\n?_{14}\nsearch tags:/;
 
-export type WriteMode = "merge" | "append" | "replace";
+export type WriteMode = "merge" | "append";
 
 export interface ParsedDescription {
   /** Text BEFORE the mimir block (trimmed). */
@@ -54,7 +54,6 @@ export function formatMimirBlock(
  *                Preserves user content above with one blank-line separator.
  * - `"append"`:  Always append the new block after existing text, even if a
  *                Mimir block already exists.
- * - `"replace"`: Return the new Mimir block only, discarding all prior content.
  */
 export function composeDescription(
   existing: string,
@@ -62,9 +61,6 @@ export function composeDescription(
   mode: WriteMode
 ): string {
   switch (mode) {
-    case "replace":
-      return newMimirBlock;
-
     case "append": {
       const trimmed = existing.trim();
       if (trimmed === "") return newMimirBlock;

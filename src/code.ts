@@ -13,8 +13,16 @@ figma.ui.onmessage = async (msg: UiToPluginMessage) => {
   if (msg.type === "SCAN_SELECTION") {
     await handleScanSelection();
   } else if (msg.type === "WRITE_DESCRIPTIONS") {
+    if (!Array.isArray(msg.items)) {
+      figma.notify("Internal error: invalid write payload", { error: true });
+      return;
+    }
     await handleWriteDescriptions(msg.items);
   } else if (msg.type === "CREATE_CHANGELOG") {
+    if (!Array.isArray(msg.entries) || !Array.isArray(msg.unchangedEntries) || !msg.meta) {
+      figma.notify("Internal error: invalid changelog payload", { error: true });
+      return;
+    }
     await handleCreateChangelog(msg.entries, msg.unchangedEntries, msg.meta);
   }
 };
@@ -245,6 +253,7 @@ async function handleCreateChangelog(
 
     // Success notification — persists until dismissed so user can click the button
     const capturedPage = page;
+    const capturedFrame = writeFrame;
     if (entries.length > 0) {
       const taggedPart = `✓ ${entries.length} icon${entries.length !== 1 ? "s" : ""} tagged`;
       const unchangedPart = unchangedEntries.length > 0
@@ -255,7 +264,9 @@ async function handleCreateChangelog(
         button: {
           text: "View changelog",
           action: () => {
-            figma.setCurrentPageAsync(capturedPage).catch(() => {});
+            figma.setCurrentPageAsync(capturedPage).then(() => {
+              figma.viewport.scrollAndZoomIntoView([capturedFrame]);
+            }).catch(() => {});
           },
         },
       });

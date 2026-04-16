@@ -20,7 +20,6 @@ import type {
 } from "./types";
 import type { CompiledIconThesaurus } from "./schema/compiled-dataset";
 import { Header } from "./components/Header";
-import { SummaryBar } from "./components/SummaryBar";
 import { Controls } from "./components/Controls";
 import { EmptyState } from "./components/EmptyState";
 import { ResultRow } from "./components/ResultRow";
@@ -41,6 +40,8 @@ const writeMode = signal<WriteMode>("append");
 const includeLowConfidence = signal(true);
 const isScanning = signal(false);
 const isWriting = signal(false);
+const showWritingIndicator = signal(false);
+let writingIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Derived
 const visibleRows = computed(() =>
@@ -92,6 +93,8 @@ window.onmessage = (event: MessageEvent) => {
     rows.value = msg.nodes.map((node) => nodeToRowData(node));
   } else if (msg.type === "WRITE_RESULT") {
     isWriting.value = false;
+    if (writingIndicatorTimer) { clearTimeout(writingIndicatorTimer); writingIndicatorTimer = null; }
+    showWritingIndicator.value = false;
     const resultMap = new Map(msg.results.map((r) => [r.nodeId, r]));
     rows.value = rows.value.map((row) => {
       const result = resultMap.get(row.nodeId);
@@ -245,6 +248,7 @@ function writeDescriptions() {
   };
 
   isWriting.value = true;
+  writingIndicatorTimer = setTimeout(() => { showWritingIndicator.value = true; }, 500);
   const msg: UiToPluginMessage = { type: "WRITE_DESCRIPTIONS", items };
   parent.postMessage({ pluginMessage: msg }, "*");
 }
@@ -258,12 +262,6 @@ function copyUnmatched() {
     .map((r) => r.nodeName)
     .join("\n");
   navigator.clipboard.writeText(names).catch(() => {});
-}
-
-function updateTags(nodeId: string, tags: string[]) {
-  rows.value = rows.value.map((r) =>
-    r.nodeId === nodeId ? { ...r, tags } : r
-  );
 }
 
 function updateIncluded(nodeId: string, included: boolean) {
@@ -286,49 +284,72 @@ function App() {
   const visible = visibleRows.value;
   const hasResults = visible.length > 0;
   const showEmpty = !hasResults;
+  const canWrite = includedRows.value.length > 0 && !isScanning.value && !isWriting.value;
+  const total = rows.value.length;
+
+  // Compact counts string for bottom bar
+  const countParts: string[] = [];
+  if (total > 0) countParts.push(`${total} selected`);
+  if (matchedCount.value > 0) countParts.push(`${matchedCount.value} matched`);
+  if (unmatchedCount.value > 0) countParts.push(`${unmatchedCount.value} unmatched`);
+  if (skippedCount.value > 0) countParts.push(`${skippedCount.value} skipped`);
 
   return (
     <div id="app">
       <Header />
-      <SummaryBar
-        total={rows.value.length}
-        matched={matchedCount.value}
-        unmatched={unmatchedCount.value}
-        skipped={skippedCount.value}
-      />
       <Controls
-        onScan={scanSelection}
-        onWrite={writeDescriptions}
         writeMode={writeMode.value}
-        onWriteModeChange={(m) => {
-          writeMode.value = m;
-        }}
+        onWriteModeChange={(m) => { writeMode.value = m; }}
         includeLowConfidence={includeLowConfidence.value}
-        onIncludeLowConfidenceChange={(v) => {
-          includeLowConfidence.value = v;
-        }}
+        onIncludeLowConfidenceChange={(v) => { includeLowConfidence.value = v; }}
         isScanning={isScanning.value}
         isWriting={isWriting.value}
         hasResults={hasResults}
         onCopyUnmatched={copyUnmatched}
         unmatchedCount={unmatchedCount.value}
       />
-      {showEmpty ? (
-        <EmptyState variant={getEmptyVariant()} />
-      ) : (
-        <div class="result-list">
-          {visible.map((row) => (
-            <ResultRow
-              key={row.nodeId}
-              data={row}
-              writeMode={writeMode.value}
-              pluginVersion={PLUGIN_VERSION}
-              onTagsChange={updateTags}
-              onIncludedChange={updateIncluded}
-            />
-          ))}
+      <div class="result-area">
+        {showEmpty ? (
+          <EmptyState variant={getEmptyVariant()} />
+        ) : (
+          <div class="result-list">
+            {visible.map((row) => (
+              <ResultRow
+                key={row.nodeId}
+                data={row}
+                writeMode={writeMode.value}
+                pluginVersion={PLUGIN_VERSION}
+                onIncludedChange={updateIncluded}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sticky bottom bar */}
+      <div class="bottom-bar">
+        {countParts.length > 0 && (
+          <div class="bottom-bar__counts">{countParts.join(" · ")}</div>
+        )}
+        <div class="bottom-bar__actions">
+          <button
+            class="btn"
+            onClick={scanSelection}
+            disabled={isScanning.value || isWriting.value}
+          >
+            {isScanning.value ? <><span class="spinner" /> Scanning…</> : "Scan Selection"}
+          </button>
+          <button
+            class="btn btn--primary"
+            onClick={writeDescriptions}
+            disabled={!canWrite}
+          >
+            {showWritingIndicator.value
+              ? <><span class="spinner" /> Working…</>
+              : "Write Descriptions"}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
