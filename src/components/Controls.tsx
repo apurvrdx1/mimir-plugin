@@ -11,6 +11,9 @@ interface ControlsProps {
   hasResults: boolean;
   onCopyUnmatched: () => void;
   unmatchedCount: number;
+  customPrefix: string;
+  onCustomPrefixChange: (v: string) => void;
+  onRematch: () => void;
 }
 
 const MODES: WriteMode[] = ["merge", "append"];
@@ -19,6 +22,7 @@ export function Controls({
   writeMode, onWriteModeChange,
   includeLowConfidence, onIncludeLowConfidenceChange,
   isScanning, isWriting, hasResults, onCopyUnmatched, unmatchedCount,
+  customPrefix, onCustomPrefixChange, onRematch,
 }: ControlsProps) {
   return (
     <div class="controls">
@@ -49,6 +53,21 @@ export function Controls({
         <div class="controls__row">
           <button class="btn btn--small btn--ghost" onClick={onCopyUnmatched}>
             Copy unmatched ({unmatchedCount})
+          </button>
+          <input
+            class="controls__prefix-input"
+            type="text"
+            placeholder="Strip prefix…"
+            value={customPrefix}
+            onInput={(e) => onCustomPrefixChange((e.target as HTMLInputElement).value)}
+            onKeyDown={(e) => { if (e.key === "Enter") onRematch(); }}
+          />
+          <button
+            class="btn btn--small"
+            onClick={onRematch}
+            disabled={!customPrefix.trim()}
+          >
+            Re-match
           </button>
         </div>
       )}

@@ -49,6 +49,15 @@ body { width: 320px; height: 560px; overflow: hidden; display: flex; flex-direct
 .controls { padding: 6px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; }
 .controls__row { display: flex; align-items: center; gap: 6px; }
 .controls__mode-label { color: var(--text-secondary); font-size: 10px; }
+.controls__prefix-input {
+  flex: 1; min-width: 0; height: 22px; padding: 0 6px;
+  font-size: 10px; font-family: inherit;
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); color: var(--text);
+  outline: none;
+}
+.controls__prefix-input:focus { border-color: var(--brand); }
+.controls__prefix-input::placeholder { color: var(--text-disabled); }
 
 /* ── Buttons ── */
 .btn {

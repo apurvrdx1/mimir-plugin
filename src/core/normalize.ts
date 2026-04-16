@@ -70,6 +70,17 @@ export function normalizeName(raw: string): NormalizeResult {
     }
   }
 
+  // Step 4b: numeric-prefix-strip — remove leading digits+hyphen when followed by a letter
+  // e.g. "01-trash" → "trash", "001-arrow-right" → "arrow-right"
+  // Guard: only fires when the char after the hyphen is a-z (keeps "24-7", "3d-box" intact)
+  {
+    const next = current.replace(/^\d+-(?=[a-z])/, "");
+    if (next !== current && next.length > 0) {
+      steps.push("numeric-prefix-strip");
+      current = next;
+    }
+  }
+
   // Step 5: variant-wrapper-strip — remove trailing style suffix segment
   {
     const parts = current.split("-");

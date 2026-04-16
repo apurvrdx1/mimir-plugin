@@ -41,6 +41,7 @@ const includeLowConfidence = signal(true);
 const isScanning = signal(false);
 const isWriting = signal(false);
 const showWritingIndicator = signal(false);
+const customPrefix = signal("");
 let writingIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Derived
@@ -253,6 +254,33 @@ function writeDescriptions() {
   parent.postMessage({ pluginMessage: msg }, "*");
 }
 
+function rematch() {
+  const prefix = customPrefix.value.trim();
+  if (!prefix) return;
+  // Escape regex special chars in the user-supplied prefix
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^${escaped}[-._/]?`, "i");
+
+  rows.value = rows.value.map((row) => {
+    if (row.matchResult.confidence !== "none" || row.nodeType === "UNSUPPORTED") return row;
+    const stripped = row.nodeName.replace(pattern, "").trim();
+    if (!stripped || stripped === row.nodeName) return row;
+    const { normalized, steps } = normalizeName(stripped);
+    const matchResult = matchIcon(normalized, index);
+    const baseTags = matchResult.entry
+      ? deduplicateTags([...matchResult.entry.tags, ...(matchResult.entry.aliases ?? [])])
+      : [];
+    return {
+      ...row,
+      normalizedName: normalized,
+      normalizationSteps: steps,
+      matchResult,
+      tags: baseTags,
+      included: matchResult.confidence !== "none",
+    };
+  });
+}
+
 function copyUnmatched() {
   const names = rows.value
     .filter(
@@ -307,6 +335,9 @@ function App() {
         hasResults={hasResults}
         onCopyUnmatched={copyUnmatched}
         unmatchedCount={unmatchedCount.value}
+        customPrefix={customPrefix.value}
+        onCustomPrefixChange={(v) => { customPrefix.value = v; }}
+        onRematch={rematch}
       />
       <div class="result-area">
         {showEmpty ? (
