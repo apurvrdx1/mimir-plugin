@@ -24,12 +24,6 @@ interface ResultRowProps {
   onIncludedChange: (nodeId: string, included: boolean) => void;
 }
 
-function ConfidenceBadge({ confidence }: { confidence: string }) {
-  return (
-    <span class={`badge badge--${confidence}`}>{confidence}</span>
-  );
-}
-
 export function ResultRow({ data, writeMode, pluginVersion, onIncludedChange }: ResultRowProps) {
   const [expanded, setExpanded] = useState(false);
   const { matchResult, nodeName, tags, included } = data;

@@ -68,7 +68,7 @@ export function Controls({
           />
           <button
             class="btn btn--small"
-            onClick={onRematch}
+            onClick={() => onRematch()}
             disabled={!customPrefix.trim()}
           >
             Re-match

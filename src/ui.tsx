@@ -287,17 +287,12 @@ function rematch(overridePrefixes?: string) {
   if (prefixes.length === 0) return;
 
   const patterns = prefixes.map((p) => {
-    const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, () => "\\$&");
+    const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, (char) => `\\${char}`);
     return new RegExp(`^${escaped}[-._/]?`, "i");
   });
 
-  const isCandidate = (row: ResultRowData) =>
-    row.nodeType !== "UNSUPPORTED" &&
-    (row.matchResult.confidence === "none" ||
-      (row.matchResult.confidence === "low" && /[-_./]/.test(row.nodeName)));
-
   rows.value = rows.value.map((row) => {
-    if (!isCandidate(row)) return row;
+    if (row.nodeType === "UNSUPPORTED") return row;
 
     // Try each prefix, keep the best result
     let best: ResultRowData | null = null;
@@ -316,7 +311,11 @@ function rematch(overridePrefixes?: string) {
         best = { ...row, normalizedName: normalized, normalizationSteps: steps, matchResult, tags: baseTags, included: matchResult.confidence !== "none" };
       }
     }
-    return best ?? row;
+    // Only update if prefix-stripped result is strictly better than current
+    if (best && CONFIDENCE_RANK[best.matchResult.confidence] > CONFIDENCE_RANK[row.matchResult.confidence]) {
+      return best;
+    }
+    return row;
   });
 
   // Persist to document (best-effort, fire and forget)

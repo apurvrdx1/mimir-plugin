@@ -1,6 +1,10 @@
+![Mimir](docs/mimir-thumbnail-image.png)
+
 # Mimir — Icon Tag Writer for Figma
 
 > Add semantic tags to icon components so they're easier to find in Figma libraries, without tagging them manually.
+
+[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy+me+a+coffee&emoji=&slug=apurvrdx&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/apurvrdx)
 
 ## What it does
 
@@ -48,8 +52,7 @@ Runtime:
     ├── ThesaurusIndex (in-memory Map, built at startup)
     ├── normalizeName() (src/core/normalize.ts)
     ├── matchIcon() (src/core/match.ts)
-    ├── formatMimirBlock() (src/core/description.ts)
-    └── SessionReport (src/core/report.ts)
+    └── formatMimirBlock() (src/core/description.ts)
 ```
 
 The plugin is split across two runtimes by Figma's architecture requirement: the main thread (`code.js`) has Figma API access but no DOM; the UI iframe (`ui.html`) has DOM but communicates with the main thread only via `postMessage`. All matching, preview logic, and user interaction live in the UI iframe. Write operations are dispatched back to the main thread.

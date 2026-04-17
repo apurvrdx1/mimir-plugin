@@ -38,7 +38,13 @@ async function readStoredPrefixes(): Promise<string> {
   ) as FrameNode | undefined;
   if (!frame) return "";
   const textNode = frame.children.find((n) => n.type === "TEXT" && n.name === "prefixes-value") as TextNode | undefined;
-  return textNode?.characters.trim() ?? "";
+  // Stored as newline-separated; return as comma-separated for the UI signal
+  const raw = textNode?.characters.trim() ?? "";
+  return raw
+    .split(/[\n,]/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .join(",");
 }
 
 /** Write prefixes to a dedicated frame on the changelog page. */
@@ -109,7 +115,12 @@ async function handleSavePrefixes(prefixes: string): Promise<void> {
       valueNode.layoutSizingHorizontal = "FILL";
       valueNode.fills = [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }];
     }
-    valueNode.characters = prefixes;
+    // Display one prefix per line; split on commas to normalize
+    valueNode.characters = prefixes
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join("\n");
 
   } catch (err) {
     // Non-fatal — prefix saving is best-effort
